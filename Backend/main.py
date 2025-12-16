@@ -10,12 +10,15 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
 origins = [
-    'http://localhost:3000'
+    'http://localhost:5173',
 ]
 
 app.add_middleware(
     CORSMiddleware, 
     allow_origins=origins,
+    allow_credentials= True,
+    allow_headers = ['*'],
+    allow_methods=['*']
 )
 
 class TransactionBase(BaseModel):
@@ -43,6 +46,10 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 models.Base.metadata.create_all(bind=engine)
 
+@app.get("/")
+def read_root():
+    return {"message": "FastAPI is running 🚀"}
+
 @app.post("/transactions/", response_model=TransactionModel)
 async def create_transaction(transaction: TransactionBase, db: db_dependency):
     db_transaction = models.Transaction(**transaction.dict())
@@ -52,7 +59,7 @@ async def create_transaction(transaction: TransactionBase, db: db_dependency):
 
     return db_transaction
 
-@app.get("/transactions", response_model=List[TransactionModel])
+@app.get("/transactions/", response_model=List[TransactionModel])
 async def read_transaction(db: db_dependency, skip: int=0, limit: int = 100):
     transactions = db.query(models.Transaction).offset(skip).limit(limit).all()
     return transactions
